@@ -84,7 +84,6 @@ int main()
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port);
     serverAddress.sin_addr.s_addr = inet_addr(ipAddress.c_str());
-
     // Initialize OpenVR
     vr::EVRInitError initError = vr::VRInitError_None;
     if (!vr::VR_IsRuntimeInstalled() || !vr::VR_IsHmdPresent())
@@ -127,6 +126,9 @@ int main()
                     float y = pose.m[1][3];
                     float z = pose.m[2][3];
 
+                    // Anlýk konumu ekrana yazdýrma
+                    std::cout << "X: " << x << " Y: " << y << " Z: " << z << std::endl;
+
                     auto message = createMessage(pitch, yaw, roll, x, y, z);
                     sendto(sock, reinterpret_cast<char*>(message.data()), message.size(), 0, reinterpret_cast<sockaddr*>(&serverAddress), sizeof(serverAddress));
                 }
@@ -141,8 +143,8 @@ int main()
     WSACleanup();
 
     //return 0;
-   // std::cout << "Çýkmak için bir tuþa basýn...\n";
-   // std::cin.get();
+    // std::cout << "Çýkmak için bir tuþa basýn...\n";
+    // std::cin.get();
     //return 0;
 
     system("pause");
