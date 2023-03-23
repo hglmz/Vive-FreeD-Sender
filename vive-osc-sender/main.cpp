@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <thread>
 #include <chrono>
 #include <string>
@@ -61,8 +62,39 @@ std::array<uint8_t, MESSAGE_SIZE> createMessage(float pitch, float yaw, float ro
 
 int main()
 {
-    const std::string ipAddress = "127.0.0.1";
-    const uint16_t port = 12345;
+    // Konfig dosyasý adý
+    const std::string CONFIG_FILE_NAME = "config.txt";
+
+    std::string ipAddress;
+    uint16_t port;
+
+    // Konfig dosyasýndan okuma
+    std::ifstream configFile(CONFIG_FILE_NAME);
+    if (configFile.is_open())
+    {
+        configFile >> ipAddress >> port;
+        configFile.close();
+    }
+    else
+    {
+        std::cerr << "Konfig dosyasý açýlamadý!" << std::endl;
+        std::cout << "IP adresi: ";
+        std::cin >> ipAddress;
+        std::cout << "Port numarasý: ";
+        std::cin >> port;
+
+        // Kullanýcýnýn girdiði IP adresi ve port numarasýný kaydet
+        std::ofstream newConfigFile(CONFIG_FILE_NAME);
+        if (newConfigFile.is_open())
+        {
+            newConfigFile << ipAddress << std::endl << port << std::endl;
+            newConfigFile.close();
+        }
+        else
+        {
+            std::cerr << "Konfig dosyasi olusturulamadi!" << std::endl;
+        }
+    }
 
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
@@ -84,6 +116,7 @@ int main()
     serverAddress.sin_family = AF_INET;
     serverAddress.sin_port = htons(port);
     serverAddress.sin_addr.s_addr = inet_addr(ipAddress.c_str());
+
     // Initialize OpenVR
     vr::EVRInitError initError = vr::VRInitError_None;
     if (!vr::VR_IsRuntimeInstalled() || !vr::VR_IsHmdPresent())
@@ -142,10 +175,10 @@ int main()
     closesocket(sock);
     WSACleanup();
 
-    //return 0;
-    // std::cout << "Çýkmak için bir tuþa basýn...\n";
-    // std::cin.get();
-    //return 0;
+    //return 0
+// std::cout << "Çýkmak için bir tuþa basýn...\n";
+// std::cin.get();
+//return 0;
 
     system("pause");
     return 0;
