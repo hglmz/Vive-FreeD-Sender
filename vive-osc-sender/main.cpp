@@ -17,6 +17,11 @@
 constexpr uint8_t MESSAGE_IDENTIFIER = 0xD1;
 constexpr size_t MESSAGE_SIZE = 29;
 
+// Metre cinsinden deðeri milimetre cinsine dönüþtürme
+float convertToMillimeters(float value) {
+    return value / 1000.0f;
+}
+
 std::array<uint8_t, MESSAGE_SIZE> createMessage(float pitch, float yaw, float roll, float x, float y, float z)
 {
     std::array<uint8_t, MESSAGE_SIZE> message{};
@@ -45,9 +50,9 @@ std::array<uint8_t, MESSAGE_SIZE> createMessage(float pitch, float yaw, float ro
     std::copy(yBytes.begin(), yBytes.end(), message.begin() + 18);
     std::copy(xBytes.begin(), xBytes.end(), message.begin() + 22);
 
-    // Zoom and focus not used
-    message[26] = 0x00;
-    message[27] = 0x00;
+    // Zoom ve focus deðerlerini 25 olarak ayarlama
+    message[26] = 25;
+    message[27] = 25;
     message[28] = 0x00;
 
     uint8_t checksum = 0;
@@ -159,6 +164,12 @@ int main()
                     float y = pose.m[1][3];
                     float z = pose.m[2][3];
 
+                    // Metre cinsinden deðerleri milimetre cinsine dönüþtürme
+                    x = convertToMillimeters(x);
+                    y = convertToMillimeters(y);
+                    z = convertToMillimeters(z);
+
+
                     // Anlýk konumu ekrana yazdýrma
                     std::cout << "X: " << x << " Y: " << y << " Z: " << z << std::endl;
 
@@ -167,7 +178,7 @@ int main()
                 }
             }
         }
-
+        //laylaylom
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 
@@ -180,6 +191,6 @@ int main()
 // std::cin.get();
 //return 0;
 
-    system("pause");
+    //system("pause");
     return 0;
 }
