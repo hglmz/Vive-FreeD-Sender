@@ -1,92 +1,75 @@
-#include <iostream>
+#include "stdafx.h"
+#include "Windows.h"
 #include <string>
-#include <stdio.h>
-#include <stdlib.h>
-#include <winsock2.h>
+#include <conio.h>
+#include <iomanip>		// for std::setprecision
+#include <iostream>
+#include "FreeD.h"
 
-#pragma comment(lib, "ws2_32.lib")
 
-using namespace std;
+#include "LighthouseTracking.h"
 
-// Set up the message format
-struct message {
-    char messageType;
-    char cameraID;
-    float pitch;
-    float yaw;
-    float roll;
-    float posZ;
-    float posY;
-    float posX;
-    int zoom;
-    int focus;
-    short reserved;
-    short checksum;
-};
+// windows keyboard input
+#include <conio.h>
+#include <vector>
 
-// Calculate the checksum for the message
-short calculateChecksum(message m) {
-    short sum = 0;
-    char* ptr = (char*)&m;
+using std::vector;
+using std::string;
 
-    for (int i = 0; i < 28; i++) {
-        sum += (short)*ptr;
-        ptr++;
-    }
+int _tmain(int argc, _TCHAR* argv[])
+{
+	int shouldListDevicesAndQuit = 0;
+	int port = 9999;
+	char ip_address[128];
+	sprintf_s(ip_address, sizeof(ip_address), "127.0.0.1");
 
-    return sum;
-}
+	// very basic command line parser, from:
+	// http://stackoverflow.com/questions/17144037/change-a-command-line-argument-argv
+	vector<string> validArgs;
+	validArgs.reserve(argc); //Avoids reallocation; it's one or two (if --item is given) too much, but safe and not pedentatic while handling rare cases where argc can be zero
 
-int main() {
-    // Set up the message to be sent
-    message m;
-    m.messageType = 0xD1;
-    m.cameraID = 0x01;
-    m.pitch = 45.0f;
-    m.yaw = 30.0f;
-    m.roll = 15.0f;
-    m.posZ = 100.0f;
-    m.posY = 50.0f;
-    m.posX = 25.0f;
-    m.zoom = 25;
-    m.focus = 25;
-    m.reserved = 0;
-    m.checksum = calculateChecksum(m);
+	// parse all user input
+	for (int i = 1; i < argc; ++i) {
+		const std::string myArg(argv[i]);
 
-    // Set up the address to send to
-    sockaddr_in si_other;
-    int slen = sizeof(si_other);
-    char* ip_address = "192.168.3.255";
-    int port = 7004;
+		if (myArg == std::string("--listdevices")) shouldListDevicesAndQuit = atoi(argv[i + 1]);
+		if (myArg == std::string("--ip")) sprintf_s(ip_address, sizeof(ip_address), argv[i + 1]);
+		if (myArg == std::string("--port")) port = atoi(argv[i + 1]);
 
-    // Initialize winsock
-    WSADATA wsa;
-    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
-        cout << "Failed. Error Code : " << WSAGetLastError();
-        return 1;
-    }
+		validArgs.push_back(myArg);
+	}
 
-    // Create a socket
-    SOCKET s;
-    if ((s = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == SOCKET_ERROR) {
-        cout << "socket() failed with error code : " << WSAGetLastError();
-        return 1;
-    }
+	// Create a new LighthouseTracking instance and parse as needed
+	LighthouseTracking* lighthouseTracking = new LighthouseTracking(IpEndpointName(ip_address, port));
+	if (lighthouseTracking) {
 
-    // Set up the address to send to
-    memset((char*)&si_other, 0, slen);
-    si_other.sin_family = AF_INET;
-    si_other.sin_port = htons(port);
-    si_other.sin_addr.S_un.S_addr = inet_addr(ip_address);
+		lighthouseTracking->PrintDevices();
 
-    // Send the message
-    if (sendto(s, (char*)&m, sizeof(m), 0, (struct sockaddr*)&si_other, slen) == SOCKET_ERROR) {
-        cout << "sendto() failed with error code : " << WSAGetLastError();
-        return 1;
-    }
+		if (!shouldListDevicesAndQuit) {
+			printf_s("Press 'q' to quit. Starting capture of tracking data...\n");
 
-    // Close the socket and cleanup winsock
-    closesocket(s);
-    WSACleanup();
+			// This is our main loop run
+			while (lighthouseTracking->RunProcedure()) {
+
+				// Windows quit routine - adapt as you need
+				if (_kbhit()) {
+					char ch = _getch();
+					if ('q' == ch) {
+						printf_s("User pressed 'q' - exiting...");
+						break;
+					}
+					else if ('l' == ch) {
+						lighthouseTracking->PrintDevices();
+					}
+				}
+
+				// a delay to not overheat your computer... :)
+				Sleep(2);
+			}
+		}
+
+		delete lighthouseTracking;
+	}
+	return EXIT_SUCCESS;
 
 }
