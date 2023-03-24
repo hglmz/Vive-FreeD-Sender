@@ -7,6 +7,7 @@
 #include "stdafx.h"
 #include "LighthouseTracking.h"
 #include <filesystem>
+void sendDataPacket(const FreeD& freed);
 
 // Destructor
 LighthouseTracking::~LighthouseTracking() {
@@ -17,8 +18,10 @@ LighthouseTracking::~LighthouseTracking() {
 	}
 }
 
+
 // Constructor
 LighthouseTracking::LighthouseTracking(IpEndpointName ip)
+
 	: transmitSocket(ip) {
 	vr::EVRInitError eError = vr::VRInitError_None;
 	m_pHMD = vr::VR_Init(&eError, vr::VRApplication_Background);
@@ -154,23 +157,22 @@ void LighthouseTracking::ParseTrackingFrame() {
                 break;
             }
 
-            // Create and send OSC message
+            // Create and send FreeD message
             if (send) {
-                char oscBuffer[2048];
-                osc::OutboundPacketStream pStream(oscBuffer, 2048);
-                pStream
-                    << osc::BeginMessage(oscAddress)
-                    << position.v[0] << position.v[1] << position.v[2]
-                    << static_cast<float>(quaternion.w) << static_cast<float>(quaternion.x)
-                    << static_cast<float>(quaternion.y) << static_cast<float>(quaternion.z);
+                // Set tracking data to FreeD object
+                m_freed.setPosition(position.v[0], position.v[1], position.v[2]);
+                m_freed.setQuaternion(static_cast<float>(quaternion.w), static_cast<float>(quaternion.x), static_cast<float>(quaternion.y), static_cast<float>(quaternion.z));
 
-                if (trackedDeviceClass == vr::TrackedDeviceClass_Controller)
-                    pStream << trigger;
+                // Send FreeD data packet
+                sendDataPacket(m_freed);
 
-                pStream << osc::EndMessage;
-                transmitSocket.Send(pStream.Data(), pStream.Size());
                 printf_s("%c(% .2f,  % .2f, % .2f) q(% .2f, % .2f, % .2f, % .2f) - ", type, position.v[0], position.v[1], position.v[2], quaternion.w, quaternion.x, quaternion.y, quaternion.z);
             }
+
+
+
+
+
         }
     }
 }
@@ -237,6 +239,7 @@ void LighthouseTracking::PrintDevices() {
 	}
 	printf_s("---------------------------\n\n");
 }
+
 
 
 //-----------------------------------------------------------------------------
@@ -347,4 +350,12 @@ vr::HmdVector3_t LighthouseTracking::GetPosition(vr::HmdMatrix34_t matrix) {
 
     return vector;
 }
+void sendDataPacket(const FreeD& freed) {
+    // Bu fonksiyonu, FreeD nesnesini alarak ve verilerini göndermek için kullanýlacak þekilde uygulayýn.
+    // Örneðin, bir soket kullanarak verileri gönderebilirsiniz.
+    uint8_t buffer[30];
+    freed.encode(buffer);
+    size_t size = sizeof(buffer);
 
+    // Burada, buffer'ý ve size'ý kullanarak verileri gönderin.
+}

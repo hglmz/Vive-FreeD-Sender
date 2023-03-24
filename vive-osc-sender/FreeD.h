@@ -1,25 +1,39 @@
-#ifndef __FREED_H__
-#define __FREED_H__
+#pragma once
 
 #include <cstdint>
+#include <openvr.h>
 
-struct FreeDPacket {
-    uint8_t messageType; // 1 byte
-    uint8_t cameraID; // 1 byte
-    float pitch; // 4 bytes
-    float yaw; // 4 bytes
-    float roll; // 4 bytes
-    float posZ; // 4 bytes
-    float posY; // 4 bytes
-    float posX; // 4 bytes
-    uint16_t zoom; // 2 bytes
-    uint16_t focus; // 2 bytes
-    uint16_t reserved; // 2 bytes
-    uint8_t checksum; // 1 byte
+class FreeD {
+public:
+    FreeD();
+    ~FreeD();
+    void setPosition(float x, float y, float z);
+    void setPitch(float pitch);
+    void setYaw(float yaw);
+    void setRoll(float roll);
+    void setPosZ(float posZ);
+    void setPosX(float posX);
+    void setPosY(float posY);
+    void setZoom(int zoom);
+    void setFocus(int focus);
+
+    void setQuaternion(float w, float x, float y, float z);
+    void createDataPacket();
+    void sendDataPacket();
+
+    void encode(uint8_t* buffer) const;
+
+private:
+    float m_pitch;
+    float m_yaw;
+    float m_roll;
+    float m_posZ;
+    float m_posX;
+    float m_posY;
+    int m_zoom;
+    int m_focus;
+
+    vr::HmdQuaternion_t m_quaternion;
+
+    uint8_t calculateChecksum(const uint8_t* buffer, size_t length) const;
 };
-
-FreeDPacket createFreeDPacket(uint8_t cameraID, float pitch, float yaw, float roll, float posZ, float posY, float posX, uint16_t zoom, uint16_t focus);
-
-int sendFreeDPacket(const char* serverIP, int serverPort, const FreeDPacket& packet);
-
-#endif // __FREED_H__

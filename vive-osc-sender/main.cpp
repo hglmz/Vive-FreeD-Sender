@@ -1,11 +1,13 @@
+// HTC Vive Lighthouse Tracking Example
+// By Peter Thor 2016, 2017, 2018, 2019
+// Modified for UDP and FreeD format
+
 #include "stdafx.h"
-#include "Windows.h"
+
 #include <string>
 #include <conio.h>
-#include <iomanip>		// for std::setprecision
+#include <iomanip> // for std::setprecision
 #include <iostream>
-#include "FreeD.h"
-
 
 #include "LighthouseTracking.h"
 
@@ -13,63 +15,89 @@
 #include <conio.h>
 #include <vector>
 
+// Include necessary libraries for UDP communication
+#include <WinSock2.h>
+#include <WS2tcpip.h>
+#include "Windows.h"
+
+#pragma comment(lib, "Ws2_32.lib")
+
 using std::vector;
 using std::string;
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-	int shouldListDevicesAndQuit = 0;
-	int port = 9999;
-	char ip_address[128];
-	sprintf_s(ip_address, sizeof(ip_address), "127.0.0.1");
+    int shouldListDevicesAndQuit = 0;
+    int port = 7004;
+    char ip_address[128];
+    sprintf_s(ip_address, sizeof(ip_address), "192.168.3.255");
 
-	// very basic command line parser, from:
-	// http://stackoverflow.com/questions/17144037/change-a-command-line-argument-argv
-	vector<string> validArgs;
-	validArgs.reserve(argc); //Avoids reallocation; it's one or two (if --item is given) too much, but safe and not pedentatic while handling rare cases where argc can be zero
+    printf("Enter the IP address: ");
+    fgets(ip_address, 128, stdin);
 
-	// parse all user input
-	for (int i = 1; i < argc; ++i) {
-		const std::string myArg(argv[i]);
+    printf("Enter the port number: ");
+    scanf_s("%d", &port);
 
-		if (myArg == std::string("--listdevices")) shouldListDevicesAndQuit = atoi(argv[i + 1]);
-		if (myArg == std::string("--ip")) sprintf_s(ip_address, sizeof(ip_address), argv[i + 1]);
-		if (myArg == std::string("--port")) port = atoi(argv[i + 1]);
+    // very basic command line parser, from:
+    // http://stackoverflow.com/questions/17144037/change-a-command-line-argument-argv
+    vector<string> validArgs;
+    validArgs.reserve(argc); //Avoids reallocation; it's one or two (if --item is given) too much, but safe and not pedentatic while handling rare cases where argc can be zero
 
-		validArgs.push_back(myArg);
-	}
+    // parse all user input
+    for (int i = 1; i < argc; ++i)
+    {
+        const std::string myArg(argv[i]);
 
-	// Create a new LighthouseTracking instance and parse as needed
-	LighthouseTracking* lighthouseTracking = new LighthouseTracking(IpEndpointName(ip_address, port));
-	if (lighthouseTracking) {
+        if (myArg == std::string("--listdevices"))
+            shouldListDevicesAndQuit = atoi(argv[i + 1]);
+        if (myArg == std::string("--ip"))
+            sprintf_s(ip_address, sizeof(ip_address), argv[i + 1]);
+        if (myArg == std::string("--port"))
+            port = atoi(argv[i + 1]);
 
-		lighthouseTracking->PrintDevices();
+        validArgs.push_back(myArg);
+    }
 
-		if (!shouldListDevicesAndQuit) {
-			printf_s("Press 'q' to quit. Starting capture of tracking data...\n");
+    // Create a new LighthouseTracking instance and parse as needed
+    //LighthouseTracking* lighthouseTracking = new LighthouseTracking(ip_address, port);
+    LighthouseTracking* lighthouseTracking = new LighthouseTracking(IpEndpointName(ip_address, port));
 
-			// This is our main loop run
-			while (lighthouseTracking->RunProcedure()) {
+    //lighthouseTracking->setEndpoint(ip_address, port);
 
-				// Windows quit routine - adapt as you need
-				if (_kbhit()) {
-					char ch = _getch();
-					if ('q' == ch) {
-						printf_s("User pressed 'q' - exiting...");
-						break;
-					}
-					else if ('l' == ch) {
-						lighthouseTracking->PrintDevices();
-					}
-				}
+    if (lighthouseTracking)
+    {
 
-				// a delay to not overheat your computer... :)
-				Sleep(2);
-			}
-		}
+        lighthouseTracking->PrintDevices();
 
-		delete lighthouseTracking;
-	}
-	return EXIT_SUCCESS;
+        if (!shouldListDevicesAndQuit)
+        {
+            printf_s("Press 'q' to quit. Starting capture of tracking data...\n");
 
+            // This is our main loop run
+            while (lighthouseTracking->RunProcedure())
+            {
+
+                // Windows quit routine - adapt as you need
+                if (_kbhit())
+                {
+                    char ch = _getch();
+                    if ('q' == ch)
+                    {
+                        printf_s("User pressed 'q' - exiting...");
+                        break;
+                    }
+                    else if ('l' == ch)
+                    {
+                        lighthouseTracking->PrintDevices();
+                    }
+                }
+
+                // a delay to not overheat your computer... :)
+                Sleep(2);
+            }
+        }
+
+        delete lighthouseTracking;
+    }
+    return EXIT_SUCCESS;
 }
